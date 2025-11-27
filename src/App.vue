@@ -4,11 +4,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <!-- Player Management -->
         <div class="lg:col-span-1">
-          <PlayerManager 
-            :player-score="gameScore"
-            @join="handlePlayerJoin"
-            @leave="handlePlayerLeave"
-          />
+          <PlayerManager />
           
           <!-- Leaderboard -->
           <div class="mt-6">

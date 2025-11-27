@@ -1,9 +1,9 @@
 import { ref, computed } from 'vue'
-import { 
-  countriesData,
+import {
   getRandomCountries,
   preloadCountries,
   getCountriesCount,
+  getCountries,
   type Country
 } from './useCountries'
 
@@ -53,7 +53,7 @@ export const useGameLogic = () => {
   )
 
   const generateQuestion = (country: Country, difficulty: 'easy' | 'medium' | 'hard'): Question => {
-    const allCapitals = countriesData.map(c => c.capital)
+    const allCapitals = getCountries().map(c => c.capital)
     const wrongAnswers = allCapitals
       .filter(capital => capital !== country.capital)
       .sort(() => 0.5 - Math.random())

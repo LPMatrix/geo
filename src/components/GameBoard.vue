@@ -187,7 +187,7 @@ const submitAnswer = () => {
   
   if (correct) {
     score.value++
-    emit('score-update', score.value)
+    emit('scoreUpdate', score.value)
   }
 }
 

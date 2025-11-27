@@ -60,6 +60,8 @@ export const preloadCountries = async (): Promise<number> => {
 
 export const getCountriesCount = (): number => countriesData.length
 
+export const getCountries = (): Country[] => countriesData
+
 export const getCountriesByContinent = (continent: string): Country[] => {
   return countriesData.filter(country => country.continent === continent)
 }

@@ -193,7 +193,7 @@
     <div v-if="isConnected" class="mt-6 bg-white rounded-lg shadow p-4">
       <div class="flex justify-between items-center mb-3">
         <h3 class="font-semibold text-gray-800">👥 Players Online</h3>
-        <span class="text-sm text-gray-600">Room: {{ roomInfo?.code }}</span>
+        <span class="text-sm text-gray-600">Room: {{ roomInfo?.id }}</span>
       </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -257,7 +257,14 @@ const gameSettings = ref({
 const hintUsed = ref(false)
 const currentHint = ref('')
 
-const leaderboard = computed(() => getLeaderboard())
+const leaderboard = computed(() => {
+  const base = getLeaderboard()
+  const currentId = currentPlayer.value?.id
+  return base.map(p => ({
+    ...p,
+    isCurrentPlayer: p.id === currentId
+  }))
+})
 const roomInfo = computed(() => getRoomInfo())
 
 let timerInterval: number | null = null
