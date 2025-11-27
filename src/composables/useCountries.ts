@@ -19,6 +19,9 @@ const normalizeRegion = (region: string): string => {
 
 export const preloadCountries = async (): Promise<number> => {
   try {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return countriesData.length
+    }
     const cached = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
     if (cached) {
       const data = JSON.parse(cached) as Country[]

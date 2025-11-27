@@ -1,0 +1,17 @@
+{
+  "name": "Capital Guessing Game",
+  "short_name": "Capitale",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "description": "Multiplayer game to guess capitals of countries",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
