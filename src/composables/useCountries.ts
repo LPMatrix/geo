@@ -7,7 +7,7 @@ export interface Country {
   area?: number
 }
 
-export const countriesData: Country[] = [
+let countriesData: Country[] = [
   // Europe
   { name: 'France', capital: 'Paris', code: 'FR', continent: 'Europe', population: 67390000, area: 551695 },
   { name: 'Germany', capital: 'Berlin', code: 'DE', continent: 'Europe', population: 83240000, area: 357022 },
@@ -120,6 +120,57 @@ export const countriesData: Country[] = [
   { name: 'Tonga', capital: "Nuku'alofa", code: 'TO', continent: 'Oceania', population: 106000, area: 747 },
   { name: 'Kiribati', capital: 'Tarawa', code: 'KI', continent: 'Oceania', population: 121000, area: 811 }
 ]
+
+const STORAGE_KEY = 'countriesData_v1'
+
+const normalizeRegion = (region: string): string => {
+  if (!region) return 'Other'
+  if (region === 'Americas') return 'North America'
+  return region
+}
+
+export const preloadCountries = async (): Promise<number> => {
+  try {
+    const cached = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
+    if (cached) {
+      const data = JSON.parse(cached) as Country[]
+      if (Array.isArray(data) && data.length > countriesData.length) {
+        countriesData = data
+        return countriesData.length
+      }
+    }
+
+    const res = await fetch('https://restcountries.com/v3.1/all?fields=name,capital,cca2,region,population,area')
+    if (!res.ok) return countriesData.length
+    const json = await res.json()
+    const fetched: Country[] = (json || [])
+      .map((c: any) => {
+        const capital = Array.isArray(c.capital) && c.capital.length > 0 ? String(c.capital[0]) : ''
+        const name = c?.name?.common ? String(c.name.common) : ''
+        const code = c?.cca2 ? String(c.cca2).toUpperCase() : ''
+        const continent = normalizeRegion(String(c.region || ''))
+        const population = typeof c.population === 'number' ? c.population : undefined
+        const area = typeof c.area === 'number' ? c.area : undefined
+        return { name, capital, code, continent, population, area }
+      })
+      .filter((c: Country) => c.name && c.capital && c.code && c.continent)
+
+    const map = new Map<string, Country>()
+    for (const c of countriesData) map.set(c.name.toLowerCase(), c)
+    for (const c of fetched) map.set(c.name.toLowerCase(), c)
+    countriesData = Array.from(map.values())
+
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(countriesData))
+    }
+
+    return countriesData.length
+  } catch {
+    return countriesData.length
+  }
+}
+
+export const getCountriesCount = (): number => countriesData.length
 
 export const getCountriesByContinent = (continent: string): Country[] => {
   return countriesData.filter(country => country.continent === continent)

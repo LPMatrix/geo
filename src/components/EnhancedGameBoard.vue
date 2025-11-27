@@ -267,7 +267,7 @@ const startGame = async () => {
     await connect('Player')
   }
   
-  initializeGame(gameSettings.value.difficulty, gameSettings.value.totalQuestions)
+  await initializeGame(gameSettings.value.difficulty, gameSettings.value.totalQuestions)
   startTimer()
 }
 

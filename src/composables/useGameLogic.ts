@@ -1,8 +1,10 @@
 import { ref, computed } from 'vue'
 import { 
-  countriesData, 
-  getRandomCountries, 
-  type Country 
+  countriesData,
+  getRandomCountries,
+  preloadCountries,
+  getCountriesCount,
+  type Country
 } from './useCountries'
 
 export interface GameState {
@@ -67,11 +69,13 @@ export const useGameLogic = () => {
     }
   }
 
-  const initializeGame = (difficulty: 'easy' | 'medium' | 'hard' = 'medium', totalQuestions: number = 10) => {
+  const initializeGame = async (difficulty: 'easy' | 'medium' | 'hard' = 'medium', totalQuestions: number = 10) => {
+    await preloadCountries()
+    const maxQuestions = Math.min(totalQuestions, getCountriesCount())
     gameState.value = {
       currentQuestion: 0,
       score: 0,
-      totalQuestions,
+      totalQuestions: maxQuestions,
       gameStarted: true,
       gameEnded: false,
       timeRemaining: difficulty === 'easy' ? 45 : difficulty === 'medium' ? 30 : 20,
@@ -79,7 +83,7 @@ export const useGameLogic = () => {
     }
 
     // Generate questions
-    const selectedCountries = getRandomCountries(totalQuestions)
+    const selectedCountries = getRandomCountries(maxQuestions)
     questions.value = selectedCountries.map(country => 
       generateQuestion(country, difficulty)
     )
@@ -131,8 +135,8 @@ export const useGameLogic = () => {
     gameState.value.gameStarted = false
   }
 
-  const restartGame = () => {
-    initializeGame(gameState.value.difficulty, gameState.value.totalQuestions)
+  const restartGame = async () => {
+    await initializeGame(gameState.value.difficulty, gameState.value.totalQuestions)
   }
 
   const getHint = (): string => {
