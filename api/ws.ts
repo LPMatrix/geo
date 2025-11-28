@@ -96,5 +96,5 @@ export default async function handler(req: Request) {
   broadcast(room, { type: 'player_joined', playerId })
   broadcast(room, { type: 'room/state', room: snapshot(room) })
 
-  return new Response(null, { status: 101, webSocket: client })
+  return new Response(null, { status: 101, webSocket: client } as any)
 }
