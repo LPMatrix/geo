@@ -33,64 +33,77 @@ export const useMultiplayer = () => {
   const isConnected = ref(false)
   const connectionStatus = ref<'connecting' | 'connected' | 'disconnected'>('disconnected')
 
-  // Simulate WebSocket connection
+  let ws: WebSocket | null = null
   let connectionInterval: number | null = null
-  let eventInterval: number | null = null
 
   const connect = async (playerName: string): Promise<boolean> => {
     try {
       connectionStatus.value = 'connecting'
-      
-      // Simulate connection delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Create current player
-      currentPlayer.value = {
-        id: `player_${Date.now()}`,
-        name: playerName,
-        score: 0,
-        status: 'online',
-        joinedAt: new Date(),
-        lastActive: new Date()
-      }
+      const origin = typeof location !== 'undefined' ? location.origin : ''
+      const base = origin.replace(/^http/, 'ws')
+      const url = `${base}/api/ws?room=global&name=${encodeURIComponent(playerName)}`
+      ws = new WebSocket(url)
 
-      // Create or join a room
-      currentRoom.value = {
-        id: `room_${Math.random().toString(36).substr(2, 9)}`,
-        name: 'Capital Guessing Game',
-        players: [currentPlayer.value],
-        maxPlayers: 8,
-        isActive: true,
-        createdAt: new Date()
-      }
+      await new Promise<boolean>((resolve) => {
+        if (!ws) return resolve(false)
+        ws.onopen = () => {
+          isConnected.value = true
+          connectionStatus.value = 'connected'
+          startConnectionHeartbeat()
+          resolve(true)
+        }
+        ws.onmessage = (evt) => {
+          try {
+            const msg = JSON.parse(String(evt.data || ''))
+            if (msg?.type === 'room/state') {
+              const room = msg.room
+              currentRoom.value = {
+                id: room.id,
+                name: 'Capital Guessing Game',
+                players: [],
+                maxPlayers: 8,
+                isActive: true,
+                createdAt: new Date()
+              }
+              players.value = room.players.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                score: p.score,
+                status: 'playing',
+                joinedAt: new Date(p.joinedAt),
+                lastActive: new Date(p.lastActive)
+              }))
+              if (!currentPlayer.value && players.value.length > 0) {
+                currentPlayer.value = players.value.find(p => p.name === playerName) || players.value[0]
+              }
+            } else if (msg?.type === 'score_update') {
+              const p = players.value.find(pl => pl.id === msg.playerId)
+              if (p) p.score = msg.score
+            }
+          } catch {}
+        }
+        ws.onclose = () => {
+          isConnected.value = false
+          connectionStatus.value = 'disconnected'
+          ws = null
+        }
+        ws.onerror = () => {
+          connectionStatus.value = 'disconnected'
+          resolve(false)
+        }
+      })
 
-      // Add some simulated players
-      players.value = [
-        currentPlayer.value,
-        ...generateSimulatedPlayers(3)
-      ]
-
-      isConnected.value = true
-      connectionStatus.value = 'connected'
-      
-      // Start connection heartbeat
-      startConnectionHeartbeat()
-      
-      // Start simulated events
-      startSimulatedEvents()
-      
-      return true
-    } catch (error) {
+      return isConnected.value
+    } catch {
       connectionStatus.value = 'disconnected'
       return false
     }
   }
 
   const disconnect = (): void => {
-    if (currentPlayer.value) {
-      broadcastEvent('player_left', currentPlayer.value.id, {
-        playerName: currentPlayer.value.name
-      })
+    if (ws) {
+      try { ws.close() } catch {}
+      ws = null
     }
 
     isConnected.value = false
@@ -99,14 +112,9 @@ export const useMultiplayer = () => {
     currentRoom.value = null
     players.value = []
     
-    // Clear intervals
     if (connectionInterval) {
       clearInterval(connectionInterval)
       connectionInterval = null
-    }
-    if (eventInterval) {
-      clearInterval(eventInterval)
-      eventInterval = null
     }
   }
 
@@ -115,7 +123,9 @@ export const useMultiplayer = () => {
     if (player) {
       player.score = newScore
       player.lastActive = new Date()
-      broadcastEvent('score_update', playerId, { score: newScore })
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'score_update', score: newScore }))
+      }
     }
   }
 
@@ -161,29 +171,7 @@ export const useMultiplayer = () => {
     }, 30000) // Update every 30 seconds
   }
 
-  const startSimulatedEvents = (): void => {
-    eventInterval = setInterval(() => {
-      if (!isConnected.value || players.value.length <= 1) return
-      
-      // Simulate other players' score updates
-      const simulatedPlayers = players.value.filter(p => p.id.startsWith('simulated_'))
-      if (simulatedPlayers.length > 0 && Math.random() > 0.7) {
-        const randomPlayer = simulatedPlayers[Math.floor(Math.random() * simulatedPlayers.length)]
-        if (Math.random() > 0.5) {
-          randomPlayer.score = Math.min(randomPlayer.score + 1, 20)
-          broadcastEvent('score_update', randomPlayer.id, { score: randomPlayer.score })
-        }
-      }
-      
-      // Simulate player status changes
-      if (Math.random() > 0.9) {
-        const randomPlayer = players.value[Math.floor(Math.random() * players.value.length)]
-        if (randomPlayer.id !== currentPlayer.value?.id) {
-          randomPlayer.status = randomPlayer.status === 'playing' ? 'online' : 'playing'
-        }
-      }
-    }, 3000) // Check every 3 seconds
-  }
+  const startSimulatedEvents = (): void => {}
 
   const getLeaderboard = () => {
     return [...players.value]

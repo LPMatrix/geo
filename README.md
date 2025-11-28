@@ -118,15 +118,11 @@ npm run build
 - **User Authentication**: Persistent player profiles
 - **Achievement System**: Badges and milestones
 - **Tournament Mode**: Competitive tournaments
-- **More Countries**: Expand database to 200+ countries
 - **Statistics**: Detailed performance analytics
 - **Social Features**: Friend lists and challenges
 
 ### Technical Improvements
 - **Performance Optimization**: Faster question loading
-- **Offline Mode**: Play without internet connection
-- **PWA Support**: Install as a progressive web app
-- **Internationalization**: Multiple language support
 
 ## 🤝 Contributing
 
